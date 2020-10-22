@@ -3,6 +3,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
+const encrypt = require("mongoose-encryption");
 
 const app = express();
 
@@ -11,15 +12,20 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
+//DB setup
 mongoose.connect("mongodb://localhost:27017/userDB", {useNewUrlParser: true, useUnifiedTopology: true});
 
-const userSchema = {
+const userSchema = new mongoose.Schema ({
   email: String,
   password: String
-};
+});
+
+const secret = "Thisismylittlesecretstring.";
+userSchema.plugin(encrypt, {secret: secret, encryptedFields: ["password"]});
 
 const User = mongoose.model("User", userSchema);
 
+// define get routes
 app.get("/", function(req, res){
   res.render("home");
 });
@@ -32,6 +38,8 @@ app.get("/register", function(req, res){
   res.render("register");
 });
 
+//define post routes
+// register user email and password in DB and allow access
 app.post("/register", function(req, res){
   const newUser = new User({
     email: req.body.username,
@@ -47,6 +55,7 @@ app.post("/register", function(req, res){
   });
 });
 
+// search DB for email(username) and if found verify with password and allow access
 app.post("/login", function(req,res){
   const username = req.body.username;
   const password = req.body.password;
@@ -63,7 +72,6 @@ app.post("/login", function(req,res){
       }
     });
 });
-
 
 
 app.listen(3000, function() {
